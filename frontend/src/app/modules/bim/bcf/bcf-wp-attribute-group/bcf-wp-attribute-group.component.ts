@@ -66,7 +66,8 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
       thumbnailsColumns: 1,
       // Ensure thumbnails are ALWAYS shown
       thumbnailsAutoHide: false,
-
+      // For BCFs all information shall be visible
+      thumbnailSize: 'contain',
       imageAnimation: '',
       previewAnimation: false,
       previewCloseOnEsc: true,
@@ -89,16 +90,19 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
     {
       breakpoint: 800,
       width: '100%',
-      height: '600px',
+      height: '400px',
       imagePercent: 80,
       thumbnailsPercent: 20,
-      thumbnailsMargin: 20,
-      thumbnailMargin: 20
+      thumbnailsMargin: 5,
+      thumbnailMargin: 5
     },
     // max-width 400
     {
       breakpoint: 400,
       height: '200px',
+      thumbnailsColumns: 3,
+      thumbnailsMargin: 5,
+      thumbnailMargin: 5,
     }
   ];
 
@@ -251,6 +255,8 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
   protected setViewpoints(viewpoints:ViewpointItem[]) {
     const length = viewpoints.length;
 
+    this.setThumbnailColumns(length);
+
     if (this.showIndex < 0 || length < 1) {
       this.showIndex = 0;
     } else if (this.showIndex >= length) {
@@ -296,5 +302,19 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
         titleText: this.text.delete_viewpoint
       }
     ];
+  }
+
+  protected setThumbnailColumns(viewpointCount:number) {
+    const options = [...this.galleryOptions];
+
+    options[0].thumbnailsColumns = viewpointCount < 6 ? viewpointCount : 5;
+    options[1].thumbnailsColumns = viewpointCount < 6 ? viewpointCount : 5;
+    options[2].thumbnailsColumns = viewpointCount < 4 ? viewpointCount : 3;
+
+    options[0].height = viewpointCount < 6 ? `${Math.round(600 / viewpointCount)}px` : '120px';
+    options[1].height = viewpointCount < 6 ? `${Math.round(600 / viewpointCount)}px` : '120px';
+    options[2].height = viewpointCount < 4 ? `${Math.round(300 / viewpointCount)}px` : '100px';
+
+    this.galleryOptions = options;
   }
 }
