@@ -33,7 +33,9 @@ module Bim::Bcf::API::V2_1
     property :topic_actions,
              getter: ->(decorator:, **) {
                if decorator.manage_bcf_allowed?
-                 %w[update updateRelatedTopics updateFiles createViewpoint]
+                 %w[viewTopic update updateRelatedTopics updateFiles createViewpoint]
+               elsif decorator.view_linked_issues_allowed?
+                 %w[viewTopic]
                else
                  []
                end
@@ -50,6 +52,10 @@ module Bim::Bcf::API::V2_1
 
     def manage_bcf_allowed?
       represented.user.allowed_to?(:manage_bcf, represented.model.project)
+    end
+
+    def view_linked_issues_allowed?
+      represented.user.allowed_to?(:view_linked_issues, represented.model.project)
     end
   end
 end

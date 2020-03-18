@@ -96,7 +96,15 @@ describe Bim::Bcf::API::V2_1::ProjectExtensions::Representer, 'rendering' do
       let(:path) { 'topic_actions' }
 
       it_behaves_like 'attribute' do
-        let(:value) { %w[update updateRelatedTopics updateFiles createViewpoint] }
+        let(:value) { %w[viewTopic update updateRelatedTopics updateFiles createViewpoint] }
+      end
+
+      context 'with only view_linked_issues' do
+        let(:permissions) { %i[view_linked_issues] }
+
+        it_behaves_like 'attribute' do
+          let(:value) { %w[viewTopic] }
+        end
       end
 
       it_behaves_like 'empty when lacking manage bcf'

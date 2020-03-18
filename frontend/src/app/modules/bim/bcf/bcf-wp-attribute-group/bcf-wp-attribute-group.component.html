@@ -1,4 +1,4 @@
-<ng-container *ngIf="viewpoints.length > 0 || viewerVisible">
+<ng-container *ngIf="(viewAllowed$ | async) && (viewpoints.length > 0 || viewerVisible)">
   <div class="attributes-group description-group">
     <div class="attributes-group--header">
       <div class="attributes-group--header-container">
@@ -17,7 +17,7 @@
       </ngx-gallery>
     </div>
 
-    <a *ngIf="viewerVisible && createAllowed"
+    <a *ngIf="viewerVisible && (createAllowed$ | async)"
        [title]="text.add_viewpoint"
        class="button"
        (click)="saveCurrentAsViewpoint()">

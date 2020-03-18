@@ -5,6 +5,7 @@ import {
   Component,
   Input,
   OnDestroy,
+  OnInit,
   ViewChild
 } from "@angular/core";
 import {StateService} from "@uirouter/core";
@@ -22,7 +23,8 @@ import {UntilDestroyedMixin} from "core-app/helpers/angular/until-destroyed.mixi
 import {NotificationsService} from "core-app/modules/common/notifications/notifications.service";
 import {BcfViewpointInterface} from "core-app/modules/bim/bcf/api/viewpoints/bcf-viewpoint.interface";
 import {WorkPackageCreateService} from "core-components/wp-new/wp-create.service";
-import {BcfExtensionResource} from "core-app/modules/bim/bcf/api/extensions/bcf-extension.resource";
+import {BcfAuthorizationService} from "core-app/modules/bim/bcf/api/bcf-authorization.service";
+import {NEVER, Observable} from "rxjs";
 
 export interface ViewpointItem {
   /** The URL of the viewpoint, if persisted */
@@ -38,7 +40,7 @@ export interface ViewpointItem {
   styleUrls: ['./bcf-wp-attribute-group.component.sass'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements AfterViewInit, OnDestroy {
+export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements OnInit, AfterViewInit, OnDestroy {
   @Input() workPackage:WorkPackageResource;
   @ViewChild(NgxGalleryComponent) gallery:NgxGalleryComponent;
 
@@ -110,8 +112,10 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
   // Remember the topic UUID, which we might just create
   topicUUID:string|undefined;
 
+  // Store whether viewing is allowed
+  viewAllowed$:Observable<unknown> = NEVER;
   // Store whether viewpoint creation is allowed
-  createAllowed = false;
+  createAllowed$:Observable<unknown> = NEVER;
 
   // Currently, this is static. Need observable if this changes over time
   viewerVisible = this.viewerBridge.viewerVisible();
@@ -120,6 +124,7 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
               readonly pathHelper:PathHelperService,
               readonly currentProject:CurrentProjectService,
               readonly bcfApi:BcfApiService,
+              readonly bcfAuthorization:BcfAuthorizationService,
               readonly viewerBridge:ViewerBridgeService,
               readonly wpCache:WorkPackageCacheService,
               readonly wpCreate:WorkPackageCreateService,
@@ -127,6 +132,11 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
               readonly cdRef:ChangeDetectorRef,
               readonly I18n:I18nService) {
     super();
+  }
+
+  ngOnInit():void {
+    this.viewAllowed$ = this.bcfAuthorization.authorized$(this.workPackage.project.idFromLink, 'topic_actions', 'viewTopic');
+    this.createAllowed$ = this.bcfAuthorization.authorized$(this.workPackage.project.idFromLink, 'topic_actions', 'createViewpoint');
   }
 
   ngAfterViewInit():void {
@@ -204,8 +214,6 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
         this.workPackage = wp;
         this.setTopicUUIDFromWorkPackage();
 
-        this.fetchCreateAllowed();
-
         if (wp.bcfViewpoints) {
           this.setViewpoints(wp.bcfViewpoints.map((el:HalLink) => {
             return { href: el.href, snapshotURL: `${el.href}/snapshot` };
@@ -213,25 +221,6 @@ export class BcfWpAttributeGroupComponent extends UntilDestroyedMixin implements
           this.loadViewpointFromRoute();
           this.cdRef.detectChanges();
         }
-      });
-  }
-
-  // Poor mans caching to avoid repeatedly fetching from the backend.
-  protected createAllowedMemoize:{[key:string]:Promise<BcfExtensionResource>} = {};
-
-  protected fetchCreateAllowed() {
-    if (!this.createAllowedMemoize[this.wpProjectId]) {
-      this.createAllowedMemoize[this.wpProjectId] = this.bcfApi
-        .projects.id(this.wpProjectId)
-        .extensions
-        .get()
-        .toPromise();
-    }
-
-    this.createAllowedMemoize[this.wpProjectId]
-      .then(resource => {
-        this.createAllowed = resource.topic_actions && resource.topic_actions.includes('createViewpoint');
-        this.cdRef.detectChanges();
       });
   }
 
